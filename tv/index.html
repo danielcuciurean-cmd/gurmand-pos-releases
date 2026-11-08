@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gurmand TV</title>
+<style>
+  html, body { margin:0; height:100%; background:#000; overflow:hidden; cursor:none; }
+  #stage { position:fixed; inset:0; background:#000; }
+  .slide { position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
+           opacity:0; transition:opacity 1s ease-in-out; background:#000; }
+  .slide.on { opacity:1; }
+  #msg { position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+         color:#fed305; font:700 4vw/1.2 Arial,sans-serif; text-align:center; padding:4vw; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="msg"></div>
+<script>
+/* Gurmand TV player
+   Folosire: index.html?tv=1  (sau tv=2, tv=3). Citeste tvN/slides.json.
+   slides.json: {"seconds":10,"slides":["1.png","2.png"]}
+   Fiecare slide poate fi si obiect: {"file":"video.mp4","seconds":15}  */
+(function () {
+  var params = new URLSearchParams(location.search);
+  var tv = (params.get('tv') || '1').replace(/[^a-z0-9_-]/gi, '');
+  var base = 'tv' + tv + '/';
+  var CHECK_MS = 2 * 60 * 1000;      // verifica schimbari la 2 minute
+  var stage = document.getElementById('stage');
+  var msg = document.getElementById('msg');
+  var list = [];                      // [{url, type, seconds}]
+  var sig = '';
+  var els = [];
+  var idx = -1;
+  var timer = null;
+
+  function showMsg(t) { msg.textContent = t; msg.style.display = t ? 'flex' : 'none'; }
+
+  function norm(cfg) {
+    var def = Number(cfg.seconds) > 0 ? Number(cfg.seconds) : 10;
+    return (cfg.slides || []).map(function (s) {
+      var o = typeof s === 'string' ? { file: s } : s;
+      var f = o.file;
+      return {
+        file: f,
+        type: /\.(mp4|webm)$/i.test(f) ? 'video' : 'img',
+        seconds: Number(o.seconds) > 0 ? Number(o.seconds) : def
+      };
+    });
+  }
+
+  function build(items, ver) {
+    stage.innerHTML = '';
+    els = items.map(function (it) {
+      var el;
+      var src = base + encodeURI(it.file) + '?v=' + ver;
+      if (it.type === 'video') {
+        el = document.createElement('video');
+        el.muted = true; el.loop = true; el.playsInline = true; el.preload = 'auto';
+        el.src = src;
+      } else {
+        el = document.createElement('img');
+        el.src = src;
+      }
+      el.className = 'slide';
+      stage.appendChild(el);
+      return el;
+    });
+  }
+
+  function next() {
+    if (!els.length) return;
+    clearTimeout(timer);
+    var prev = idx >= 0 ? els[idx] : null;
+    idx = (idx + 1) % els.length;
+    var cur = els[idx];
+    if (cur.tagName === 'VIDEO') { try { cur.currentTime = 0; cur.play(); } catch (e) {} }
+    cur.classList.add('on');
+    if (prev && prev !== cur) {
+      setTimeout(function () {
+        prev.classList.remove('on');
+        if (prev.tagName === 'VIDEO') { try { prev.pause(); } catch (e) {} }
+      }, 1000);
+    }
+    timer = setTimeout(next, list[idx].seconds * 1000);
+  }
+
+  function load() {
+    fetch(base + 'slides.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (cfg) {
+        var s = JSON.stringify(cfg);
+        if (s === sig && els.length) return;          // nimic schimbat
+        var items = norm(cfg);
+        if (!items.length) { if (!els.length) showMsg('Nu sunt slide-uri configurate'); return; }
+        sig = s; list = items; idx = -1;
+        build(items, Date.now());
+        showMsg('');
+        next();
+      })
+      .catch(function () {
+        // fara internet / eroare: ramane ce rula deja
+        if (!els.length) showMsg('Se incarca...');
+      });
+  }
+
+  // Ecranul sa nu se stinga (unde e suportat)
+  function wake() {
+    if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(function () {});
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) wake(); });
+  wake();
+
+  // Pagina se reincarca singura o data pe zi (curata memoria televizorului)
+  setTimeout(function () { location.reload(); }, 6 * 60 * 60 * 1000);
+
+  load();
+  setInterval(load, CHECK_MS);
+})();
+</script>
+</body>
+</html>
