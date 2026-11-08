@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gurmand TV Admin</title>
+<style>
+:root{--red:#b81b14;--yellow:#fed305;--bg:#111;--card:#1d1d1d;--line:#333;--txt:#f3f3f3;--mut:#9a9a9a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.4 system-ui,Segoe UI,Roboto,sans-serif}
+header{background:var(--red);padding:14px 16px;font-weight:700;font-size:20px}
+main{max-width:980px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+h2{margin:0 0 10px;font-size:17px;color:var(--yellow)}
+input,select,button{font:inherit;border-radius:8px;border:1px solid var(--line);background:#262626;color:var(--txt);padding:9px 12px}
+input[type=password],input[type=text]{width:100%}
+button{cursor:pointer}
+button.p{background:var(--yellow);color:#000;border-color:var(--yellow);font-weight:700}
+button.d{background:#5a1511;border-color:#8a2019}
+button:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tabs button.on{background:var(--yellow);color:#000;font-weight:700}
+#list{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.s{background:#151515;border:1px solid var(--line);border-radius:8px;padding:8px}
+.s img{width:100%;aspect-ratio:16/9;object-fit:contain;background:#000;border-radius:4px;display:block}
+.s .n{font-size:12px;color:var(--mut);word-break:break-all;margin:4px 0}
+.s .row{gap:4px}
+.s button{padding:5px 9px}
+.s input{width:62px;padding:5px}
+.mut{color:var(--mut);font-size:14px}
+#st{position:sticky;bottom:0;background:#000;border-top:1px solid var(--line);padding:10px 16px;font-size:14px;min-height:42px}
+.ok{color:#7ddc7d}.er{color:#ff8a80}
+</style>
+</head>
+<body>
+<header>Gurmand TV – administrare afișaj</header>
+<main>
+
+<div class="card" id="cTok">
+  <h2>1. Cheie de acces GitHub</h2>
+  <p class="mut">O lipești o singură dată, rămâne salvată doar în browserul acesta. Nu o trimite nimănui. Cum o faci: GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate. Repository access: doar <b>gurmand-pos-releases</b>; Permissions → Contents: <b>Read and write</b>.</p>
+  <div class="row"><input type="password" id="tok" placeholder="github_pat_..." autocomplete="off"><button class="p" id="saveTok">Salvează</button></div>
+</div>
+
+<div class="card">
+  <h2>2. Alege televizorul</h2>
+  <div class="row tabs" id="tabs">
+    <button data-tv="1" class="on">TV 1</button>
+    <button data-tv="2">TV 2</button>
+    <button data-tv="3">TV 3</button>
+    <a id="prev" href="#" target="_blank" style="margin-left:auto;color:var(--yellow)">Vezi cum arată ↗</a>
+  </div>
+</div>
+
+<div class="card">
+  <h2>3. Imagini</h2>
+  <div class="row">
+    <input type="file" id="file" accept="image/*,video/mp4,video/webm" multiple>
+    <button class="p" id="up">Încarcă</button>
+    <label class="mut">Secunde / poză:</label>
+    <input type="number" id="secs" min="2" max="120" value="10" style="width:80px">
+  </div>
+  <p class="mut">Folosește PNG sau JPG 1366×768 (16:9). Pozele noi se adaugă la sfârșit; apoi le muți cu ◀ ▶ și apeși „Salvează ordinea”.</p>
+  <div id="list"></div>
+  <div class="row" style="margin-top:12px">
+    <button class="p" id="save">Salvează ordinea</button>
+    <span class="mut">Televizorul se actualizează singur în 2–4 minute după salvare.</span>
+  </div>
+</div>
+
+</main>
+<div id="st">Gata.</div>
+
+<script>
+(function(){
+  var OWNER='danielcuciurean-cmd', REPO='gurmand-pos-releases', BRANCH='main';
+  var tv='1', cfg={seconds:10,slides:[]}, slidesSha=null;
+  var $=function(i){return document.getElementById(i)};
+  function tok(){try{return localStorage.getItem('gh_tok')||''}catch(e){return ''}}
+  function say(m,c){var s=$('st');s.textContent=m;s.className=c||''}
+  function api(path,opt){
+    opt=opt||{};
+    opt.headers={'Authorization':'Bearer '+tok(),'Accept':'application/vnd.github+json'};
+    if(opt.body){opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(opt.body)}
+    return fetch('https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/'+path+(opt.method&&opt.method!=='GET'?'':'?ref='+BRANCH+'&t='+Date.now()),opt)
+      .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.message||r.status);return j})});
+  }
+  function b64utf8(s){return btoa(unescape(encodeURIComponent(s)))}
+  function fromB64utf8(s){return decodeURIComponent(escape(atob(s.replace(/\n/g,''))))}
+  function name(s){return typeof s==='string'?s:s.file}
+  function clean(n){
+    n=n.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9._-]+/g,'-');
+    return Date.now().toString(36)+'-'+n;
+  }
+  function render(){
+    var l=$('list');l.innerHTML='';
+    if(!cfg.slides.length){l.innerHTML='<p class="mut">Nu sunt imagini pe acest televizor.</p>'}
+    cfg.slides.forEach(function(s,i){
+      var f=name(s), d=document.createElement('div');d.className='s';
+      var isV=/\.(mp4|webm)$/i.test(f);
+      var m=isV?'<div style="aspect-ratio:16/9;background:#000;display:flex;align-items:center;justify-content:center">▶ video</div>'
+        :'<img src="../tv'+tv+'/'+encodeURI(f)+'?t='+Date.now()+'" alt="">';
+      d.innerHTML=m+'<div class="n">'+(i+1)+'. '+f+'</div><div class="row"><button data-a="l">◀</button><button data-a="r">▶</button><input type="number" min="2" max="120" title="secunde" value="'+(typeof s==='object'&&s.seconds?s.seconds:'')+'" placeholder="'+(cfg.seconds||10)+'s"><button class="d" data-a="x">Șterge</button></div>';
+      d.querySelector('[data-a=l]').onclick=function(){mv(i,-1)};
+      d.querySelector('[data-a=r]').onclick=function(){mv(i,1)};
+      d.querySelector('[data-a=x]').onclick=function(){del(i)};
+      d.querySelector('input').onchange=function(e){
+        var v=parseInt(e.target.value,10), file=name(cfg.slides[i]);
+        cfg.slides[i]=v?{file:file,seconds:v}:file;
+      };
+      l.appendChild(d);
+    });
+  }
+  function mv(i,d){var j=i+d;if(j<0||j>=cfg.slides.length)return;var t=cfg.slides[i];cfg.slides[i]=cfg.slides[j];cfg.slides[j]=t;render()}
+  function load(){
+    if(!tok()){say('Lipește mai întâi cheia GitHub (pasul 1).','er');return}
+    $('prev').href='../?tv='+tv;
+    say('Se încarcă TV '+tv+'…');
+    api('tv/tv'+tv+'/slides.json').then(function(j){
+      slidesSha=j.sha;cfg=JSON.parse(fromB64utf8(j.content));if(!cfg.slides)cfg.slides=[];
+      $('secs').value=cfg.seconds||10;render();say('TV '+tv+' încărcat.','ok');
+    }).catch(function(e){say('Eroare: '+e.message,'er')});
+  }
+  function save(){
+    cfg.seconds=parseInt($('secs').value,10)||10;
+    say('Se salvează…');
+    return api('tv/tv'+tv+'/slides.json',{method:'PUT',body:{message:'TV '+tv+': actualizare ordine',branch:BRANCH,sha:slidesSha,content:b64utf8(JSON.stringify(cfg,null,2)+'\n')}})
+      .then(function(r){slidesSha=r.content.sha;say('Salvat. Apare pe televizor în 2–4 minute.','ok')})
+      .catch(function(e){say('Eroare la salvare: '+e.message,'er')});
+  }
+  function del(i){
+    var f=name(cfg.slides[i]);
+    if(!confirm('Ștergi '+f+' ?'))return;
+    cfg.slides.splice(i,1);
+    say('Se șterge…');
+    save().then(function(){
+      return api('tv/tv'+tv+'/'+encodeURI(f)).then(function(j){
+        return api('tv/tv'+tv+'/'+encodeURI(f),{method:'DELETE',body:{message:'TV '+tv+': șterge '+f,branch:BRANCH,sha:j.sha}});
+      });
+    }).then(render).catch(function(){render()});
+  }
+  function readB64(file){
+    return new Promise(function(res,rej){
+      var r=new FileReader();r.onload=function(){res(r.result.split(',')[1])};r.onerror=rej;r.readAsDataURL(file);
+    });
+  }
+  function upload(){
+    var fs=[].slice.call($('file').files);
+    if(!fs.length){say('Alege întâi pozele.','er');return}
+    if(!tok()){say('Lipește cheia GitHub (pasul 1).','er');return}
+    var added=[], p=Promise.resolve();
+    fs.forEach(function(f,k){
+      p=p.then(function(){
+        say('Se încarcă '+(k+1)+'/'+fs.length+': '+f.name+'…');
+        var n=clean(f.name);
+        return readB64(f).then(function(b){
+          return api('tv/tv'+tv+'/'+n,{method:'PUT',body:{message:'TV '+tv+': adaugă '+n,branch:BRANCH,content:b}});
+        }).then(function(){added.push(n)});
+      });
+    });
+    p.then(function(){
+      added.forEach(function(n){cfg.slides.push(n)});
+      return save();
+    }).then(function(){$('file').value='';render()})
+      .catch(function(e){say('Eroare la încărcare: '+e.message,'er')});
+  }
+  $('saveTok').onclick=function(){
+    try{localStorage.setItem('gh_tok',$('tok').value.trim())}catch(e){}
+    $('tok').value='';load();
+  };
+  [].forEach.call($('tabs').querySelectorAll('button'),function(b){
+    b.onclick=function(){
+      [].forEach.call($('tabs').querySelectorAll('button'),function(x){x.classList.remove('on')});
+      b.classList.add('on');tv=b.getAttribute('data-tv');load();
+    };
+  });
+  $('up').onclick=upload;
+  $('save').onclick=save;
+  load();
+})();
+</script>
+</body>
+</html>
