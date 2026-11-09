@@ -1,9 +1,20 @@
 {
   "seconds": 10,
   "slides": [
-    "mw8013o4-afisaj-televizoare-gurmand.png",
-    "mw801nf7-tv1.png",
-    "mw81kzr8-poza1.png",
-    "mw82h0ag-afisaj-televizoare-gurmand-3-.png"
+    {
+      "file": "mw9ootg9-5.jpg",
+      "seconds": 15
+    },
+    "mw9ootg8-1.jpg",
+    "mw9ootg9-afisaj-televizoare-gurmand-3-.jpg",
+    {
+      "file": "mw9ootg9-6.jpg",
+      "seconds": 15
+    },
+    "mw9ootg9-afisaj-televizoare-gurmand-4-.jpg",
+    {
+      "file": "mw9ootg9-varianta-b---crispy-strips-negru-galben-.jpg",
+      "seconds": 12
+    }
   ]
 }
