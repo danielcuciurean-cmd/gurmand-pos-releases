@@ -1,4 +1,6 @@
 {
   "seconds": 10,
-  "slides": ["1.png", "2.png"]
+  "slides": [
+    "1.png"
+  ]
 }
