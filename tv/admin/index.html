@@ -22,14 +22,16 @@ button:disabled{opacity:.4;cursor:default}
 .tabs button.on{background:var(--yellow);color:#000;font-weight:700}
 #list{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
 .s{background:#151515;border:1px solid var(--line);border-radius:8px;padding:8px}
+.s.new{border-color:var(--yellow)}
 .s img{width:100%;aspect-ratio:16/9;object-fit:contain;background:#000;border-radius:4px;display:block}
 .s .n{font-size:12px;color:var(--mut);word-break:break-all;margin:4px 0}
 .s .row{gap:4px}
 .s button{padding:5px 9px}
-.s input{width:62px;padding:5px}
+.s input[type=number]{width:62px;padding:5px}
 .mut{color:var(--mut);font-size:14px}
 #st{position:sticky;bottom:0;background:#000;border-top:1px solid var(--line);padding:10px 16px;font-size:14px;min-height:42px}
 .ok{color:#7ddc7d}.er{color:#ff8a80}
+#dirty{display:none;background:#3a2f00;border:1px solid var(--yellow);color:var(--yellow);border-radius:8px;padding:8px 12px;margin:10px 0}
 </style>
 </head>
 <body>
@@ -56,15 +58,16 @@ button:disabled{opacity:.4;cursor:default}
   <h2>3. Imagini</h2>
   <div class="row">
     <input type="file" id="file" accept="image/*,video/mp4,video/webm" multiple>
-    <button class="p" id="up">Încarcă</button>
-    <label class="mut">Secunde / poză:</label>
+    <label class="mut">Secunde / poză (implicit):</label>
     <input type="number" id="secs" min="2" max="120" value="10" style="width:80px">
   </div>
-  <p class="mut">Folosește PNG sau JPG 1366×768 (16:9). Pozele noi se adaugă la sfârșit; apoi le muți cu ◀ ▶ și apeși „Salvează ordinea”.</p>
+  <p class="mut">Alegi pozele (se adaugă la sfârșit, marcate cu galben), le muți cu ◀ ▶, ștergi ce nu mai vrei, iar la final apeși <b>Publică</b>: totul pleacă într-o singură operație, deci o singură publicare. Folosește JPG sau PNG 16:9 (ex. 1366×768).</p>
+  <div id="dirty">Ai modificări nepublicate. Apasă „Publică” ca să ajungă pe televizor.</div>
   <div id="list"></div>
   <div class="row" style="margin-top:12px">
-    <button class="p" id="save">Salvează ordinea</button>
-    <span class="mut">Televizorul se actualizează singur în 2–4 minute după salvare.</span>
+    <button class="p" id="pub" disabled>Publică modificările</button>
+    <button id="reset" disabled>Renunță</button>
+    <span class="mut">Televizorul se actualizează singur la câteva minute după publicare.</span>
   </div>
 </div>
 
@@ -74,95 +77,137 @@ button:disabled{opacity:.4;cursor:default}
 <script>
 (function(){
   var OWNER='danielcuciurean-cmd', REPO='gurmand-pos-releases', BRANCH='main';
-  var tv='1', cfg={seconds:10,slides:[]}, slidesSha=null;
+  var tv='1';
+  var cfg={seconds:10,slides:[]};     // starea curentă (locală)
+  var orig=null;                       // starea publicată (JSON string)
+  var pending={};                      // nume nou -> File (de încărcat)
+  var removed=[];                      // fișiere existente de șters
+  var busy=false;
   var $=function(i){return document.getElementById(i)};
   function tok(){try{return localStorage.getItem('gh_tok')||''}catch(e){return ''}}
   function say(m,c){var s=$('st');s.textContent=m;s.className=c||''}
-  function api(path,opt){
-    opt=opt||{};
-    opt.headers={'Authorization':'Bearer '+tok(),'Accept':'application/vnd.github+json'};
-    if(opt.body){opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(opt.body)}
-    return fetch('https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/'+path+(opt.method&&opt.method!=='GET'?'':'?ref='+BRANCH+'&t='+Date.now()),opt)
-      .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.message||r.status);return j})});
+  function gh(path,method,body){
+    var o={method:method||'GET',headers:{'Authorization':'Bearer '+tok(),'Accept':'application/vnd.github+json'}};
+    if(body){o.headers['Content-Type']='application/json';o.body=JSON.stringify(body)}
+    var url='https://api.github.com/repos/'+OWNER+'/'+REPO+'/'+path;
+    if(o.method==='GET')url+=(path.indexOf('?')<0?'?':'&')+'t='+Date.now();
+    return fetch(url,o).then(function(r){
+      return r.json().then(function(j){if(!r.ok)throw new Error(j.message||r.status);return j});
+    });
   }
-  function b64utf8(s){return btoa(unescape(encodeURIComponent(s)))}
   function fromB64utf8(s){return decodeURIComponent(escape(atob(s.replace(/\n/g,''))))}
   function name(s){return typeof s==='string'?s:s.file}
   function clean(n){
     n=n.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9._-]+/g,'-');
     return Date.now().toString(36)+'-'+n;
   }
+  function snapshot(){return JSON.stringify({seconds:parseInt($('secs').value,10)||10,slides:cfg.slides})}
+  function isDirty(){return orig!==null&&(snapshot()!==orig||removed.length>0||Object.keys(pending).length>0)}
+  function refresh(){
+    var d=isDirty();
+    $('dirty').style.display=d?'block':'none';
+    $('pub').disabled=!d||busy;
+    $('reset').disabled=!d||busy;
+  }
   function render(){
     var l=$('list');l.innerHTML='';
     if(!cfg.slides.length){l.innerHTML='<p class="mut">Nu sunt imagini pe acest televizor.</p>'}
     cfg.slides.forEach(function(s,i){
-      var f=name(s), d=document.createElement('div');d.className='s';
+      var f=name(s), d=document.createElement('div'), isNew=!!pending[f];
+      d.className='s'+(isNew?' new':'');
       var isV=/\.(mp4|webm)$/i.test(f);
+      var src=isNew?pending[f].__url:'../tv'+tv+'/'+encodeURI(f);
       var m=isV?'<div style="aspect-ratio:16/9;background:#000;display:flex;align-items:center;justify-content:center">▶ video</div>'
-        :'<img src="../tv'+tv+'/'+encodeURI(f)+'?t='+Date.now()+'" alt="">';
-      d.innerHTML=m+'<div class="n">'+(i+1)+'. '+f+'</div><div class="row"><button data-a="l">◀</button><button data-a="r">▶</button><input type="number" min="2" max="120" title="secunde" value="'+(typeof s==='object'&&s.seconds?s.seconds:'')+'" placeholder="'+(cfg.seconds||10)+'s"><button class="d" data-a="x">Șterge</button></div>';
+        :'<img src="'+src+'" alt="">';
+      d.innerHTML=m+'<div class="n">'+(i+1)+'. '+f+(isNew?' (nou)':'')+'</div><div class="row"><button data-a="l">◀</button><button data-a="r">▶</button><input type="number" min="2" max="120" title="secunde" value="'+(typeof s==='object'&&s.seconds?s.seconds:'')+'" placeholder="'+($('secs').value||10)+'s"><button class="d" data-a="x">Șterge</button></div>';
       d.querySelector('[data-a=l]').onclick=function(){mv(i,-1)};
       d.querySelector('[data-a=r]').onclick=function(){mv(i,1)};
       d.querySelector('[data-a=x]').onclick=function(){del(i)};
       d.querySelector('input').onchange=function(e){
         var v=parseInt(e.target.value,10), file=name(cfg.slides[i]);
-        cfg.slides[i]=v?{file:file,seconds:v}:file;
+        cfg.slides[i]=v?{file:file,seconds:v}:file;refresh();
       };
       l.appendChild(d);
     });
+    refresh();
   }
   function mv(i,d){var j=i+d;if(j<0||j>=cfg.slides.length)return;var t=cfg.slides[i];cfg.slides[i]=cfg.slides[j];cfg.slides[j]=t;render()}
+  function del(i){
+    var f=name(cfg.slides[i]);
+    cfg.slides.splice(i,1);
+    if(pending[f]){try{URL.revokeObjectURL(pending[f].__url)}catch(e){}delete pending[f]}
+    else removed.push(f);
+    render();
+  }
+  function reset(){
+    Object.keys(pending).forEach(function(k){try{URL.revokeObjectURL(pending[k].__url)}catch(e){}});
+    pending={};removed=[];
+    load();
+  }
   function load(){
     if(!tok()){say('Lipește mai întâi cheia GitHub (pasul 1).','er');return}
     $('prev').href='../?tv='+tv;
     say('Se încarcă TV '+tv+'…');
-    api('tv/tv'+tv+'/slides.json').then(function(j){
-      slidesSha=j.sha;cfg=JSON.parse(fromB64utf8(j.content));if(!cfg.slides)cfg.slides=[];
-      $('secs').value=cfg.seconds||10;render();say('TV '+tv+' încărcat.','ok');
+    gh('contents/tv/tv'+tv+'/slides.json?ref='+BRANCH).then(function(j){
+      cfg=JSON.parse(fromB64utf8(j.content));if(!cfg.slides)cfg.slides=[];
+      pending={};removed=[];
+      $('secs').value=cfg.seconds||10;
+      orig=snapshot();
+      render();say('TV '+tv+' încărcat.','ok');
     }).catch(function(e){say('Eroare: '+e.message,'er')});
   }
-  function save(){
-    cfg.seconds=parseInt($('secs').value,10)||10;
-    say('Se salvează…');
-    return api('tv/tv'+tv+'/slides.json',{method:'PUT',body:{message:'TV '+tv+': actualizare ordine',branch:BRANCH,sha:slidesSha,content:b64utf8(JSON.stringify(cfg,null,2)+'\n')}})
-      .then(function(r){slidesSha=r.content.sha;say('Salvat. Apare pe televizor în 2–4 minute.','ok')})
-      .catch(function(e){say('Eroare la salvare: '+e.message,'er')});
-  }
-  function del(i){
-    var f=name(cfg.slides[i]);
-    if(!confirm('Ștergi '+f+' ?'))return;
-    cfg.slides.splice(i,1);
-    say('Se șterge…');
-    save().then(function(){
-      return api('tv/tv'+tv+'/'+encodeURI(f)).then(function(j){
-        return api('tv/tv'+tv+'/'+encodeURI(f),{method:'DELETE',body:{message:'TV '+tv+': șterge '+f,branch:BRANCH,sha:j.sha}});
-      });
-    }).then(render).catch(function(){render()});
+  function addFiles(){
+    var fs=[].slice.call($('file').files);
+    fs.forEach(function(f){
+      var n=clean(f.name);
+      f.__url=URL.createObjectURL(f);
+      pending[n]=f;cfg.slides.push(n);
+    });
+    $('file').value='';
+    render();
+    if(fs.length)say(fs.length+' poze adăugate local. Apasă „Publică” când ești gata.');
   }
   function readB64(file){
     return new Promise(function(res,rej){
       var r=new FileReader();r.onload=function(){res(r.result.split(',')[1])};r.onerror=rej;r.readAsDataURL(file);
     });
   }
-  function upload(){
-    var fs=[].slice.call($('file').files);
-    if(!fs.length){say('Alege întâi pozele.','er');return}
-    if(!tok()){say('Lipește cheia GitHub (pasul 1).','er');return}
-    var added=[], p=Promise.resolve();
-    fs.forEach(function(f,k){
-      p=p.then(function(){
-        say('Se încarcă '+(k+1)+'/'+fs.length+': '+f.name+'…');
-        var n=clean(f.name);
-        return readB64(f).then(function(b){
-          return api('tv/tv'+tv+'/'+n,{method:'PUT',body:{message:'TV '+tv+': adaugă '+n,branch:BRANCH,content:b}});
-        }).then(function(){added.push(n)});
+  function publish(){
+    if(busy||!isDirty())return;
+    busy=true;refresh();
+    cfg.seconds=parseInt($('secs').value,10)||10;
+    var names=Object.keys(pending), baseSha, baseTree, entries=[];
+    say('Se pregătește publicarea…');
+    gh('git/ref/heads/'+BRANCH).then(function(r){
+      baseSha=r.object.sha;return gh('git/commits/'+baseSha);
+    }).then(function(c){
+      baseTree=c.tree.sha;
+      var p=Promise.resolve();
+      names.forEach(function(n,k){
+        p=p.then(function(){
+          say('Se încarcă poza '+(k+1)+'/'+names.length+'…');
+          return readB64(pending[n]).then(function(b){
+            return gh('git/blobs','POST',{content:b,encoding:'base64'});
+          }).then(function(blob){
+            entries.push({path:'tv/tv'+tv+'/'+n,mode:'100644',type:'blob',sha:blob.sha});
+          });
+        });
       });
-    });
-    p.then(function(){
-      added.forEach(function(n){cfg.slides.push(n)});
-      return save();
-    }).then(function(){$('file').value='';render()})
-      .catch(function(e){say('Eroare la încărcare: '+e.message,'er')});
+      return p;
+    }).then(function(){
+      removed.forEach(function(f){entries.push({path:'tv/tv'+tv+'/'+f,mode:'100644',type:'blob',sha:null})});
+      entries.push({path:'tv/tv'+tv+'/slides.json',mode:'100644',type:'blob',content:JSON.stringify(cfg,null,2)+'\n'});
+      say('Se creează modificarea…');
+      return gh('git/trees','POST',{base_tree:baseTree,tree:entries});
+    }).then(function(t){
+      return gh('git/commits','POST',{message:'TV '+tv+': publică modificările ('+names.length+' adăugate, '+removed.length+' șterse)',tree:t.sha,parents:[baseSha]});
+    }).then(function(c){
+      return gh('git/refs/heads/'+BRANCH,'PATCH',{sha:c.sha});
+    }).then(function(){
+      busy=false;
+      say('Publicat într-o singură operație. Apare pe televizor în câteva minute.','ok');
+      load();
+    }).catch(function(e){busy=false;refresh();say('Eroare la publicare: '+e.message,'er')});
   }
   $('saveTok').onclick=function(){
     try{localStorage.setItem('gh_tok',$('tok').value.trim())}catch(e){}
@@ -170,12 +215,16 @@ button:disabled{opacity:.4;cursor:default}
   };
   [].forEach.call($('tabs').querySelectorAll('button'),function(b){
     b.onclick=function(){
+      if(isDirty()&&!confirm('Ai modificări nepublicate pe acest TV. Le pierzi dacă schimbi televizorul. Continui?'))return;
       [].forEach.call($('tabs').querySelectorAll('button'),function(x){x.classList.remove('on')});
       b.classList.add('on');tv=b.getAttribute('data-tv');load();
     };
   });
-  $('up').onclick=upload;
-  $('save').onclick=save;
+  $('file').onchange=addFiles;
+  $('pub').onclick=publish;
+  $('reset').onclick=reset;
+  $('secs').onchange=function(){refresh()};
+  window.addEventListener('beforeunload',function(e){if(isDirty()){e.preventDefault();e.returnValue=''}});
   load();
 })();
 </script>
