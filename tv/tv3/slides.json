@@ -1,9 +1,17 @@
 {
   "seconds": 10,
   "slides": [
-    "mw9jv4si-meniupizza.png",
-    "mw9k9z5r-burgeri.png",
-    "mw9lt08r-puicumamaliga.png",
-    "mw9lt260-scrijele.png"
+    "mw9oiwfz-1.jpg",
+    {
+      "file": "mw9oiwg0-5.jpg",
+      "seconds": 15
+    },
+    "mw9oiwg0-afisaj-televizoare-gurmand-3-.jpg",
+    "mw9oiwg0-afisaj-televizoare-gurmand-4-.jpg",
+    {
+      "file": "mw9oiwg0-6.jpg",
+      "seconds": 15
+    },
+    "mw9oiwg0-varianta-b---crispy-strips-negru-galben-.jpg"
   ]
 }
