@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meniu Gurmand</title>
+<meta name="description" content="Meniul Gurmand: preturi, alergeni si valori nutritionale orientative.">
+<style>
+:root{--bg:#0b0b0b;--card:#171717;--line:#2a2a2a;--tx:#f5f5f5;--mut:#a3a3a3;--y:#ffc928;--r:#ff5a1f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:20px 16px 8px;text-align:center}
+h1{margin:0;font-size:32px;letter-spacing:1px;color:var(--y);text-transform:uppercase}
+header p{margin:4px 0 0;color:var(--mut);font-size:14px}
+.bar{position:sticky;top:0;background:var(--bg);padding:10px 16px;z-index:5;border-bottom:1px solid var(--line)}
+input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--tx);font-size:16px}
+.tabs{display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:2px}
+.tabs button{flex:none;padding:8px 14px;border-radius:20px;border:1px solid var(--line);background:var(--card);color:var(--tx);font-size:14px;cursor:pointer}
+.tabs button.on{background:var(--y);color:#000;border-color:var(--y);font-weight:700}
+main{padding:8px 16px 24px;max-width:720px;margin:auto}
+h2{font-size:18px;margin:20px 0 8px;color:var(--y);text-transform:uppercase}
+.it{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
+.it summary{list-style:none;display:flex;justify-content:space-between;gap:12px;padding:14px;cursor:pointer;align-items:center}
+.it summary::-webkit-details-marker{display:none}
+.n{font-weight:600}
+.p{background:var(--y);color:#000;font-weight:800;padding:3px 10px;border-radius:6px;white-space:nowrap}
+.d{padding:0 14px 14px;font-size:14px;color:var(--mut)}
+.d b{color:var(--tx)}
+.al{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.al span{background:#2b1a12;color:#ffb089;border:1px solid #5a2d17;border-radius:6px;padding:2px 8px;font-size:13px}
+.al span.no{background:#14261a;color:#8fd9a3;border-color:#25502f}
+table{width:100%;border-collapse:collapse;margin-top:4px}
+td{padding:4px 0;border-bottom:1px solid var(--line)}td+td{text-align:right;color:var(--tx)}
+.note{margin:16px 0;padding:12px 14px;border:1px dashed var(--r);border-radius:10px;color:#ffc4a8;font-size:13px}
+footer{padding:0 16px 32px;text-align:center;color:var(--mut);font-size:12px}
+.empty{color:var(--mut);text-align:center;padding:24px}
+</style>
+</head>
+<body>
+<header><h1>Gurmand</h1><p>Meniu complet · prețuri în lei</p></header>
+<div class="bar">
+<input id="q" type="search" placeholder="Caută în meniu…" autocomplete="off">
+<div class="tabs" id="tabs"></div>
+</div>
+<main>
+<div class="note">Alergenii și valorile nutriționale sunt <b>orientative</b> (estimări pe porție). Rețetele pot varia. Dacă ai alergii, întreabă personalul înainte de comandă.</div>
+<div id="list"></div>
+</main>
+<footer>Cei 14 alergeni declarați UE: gluten, crustacee, ouă, pește, arahide, soia, lapte, fructe cu coajă, țelină, muștar, susan, dioxid de sulf/sulfiți, lupin, moluște.</footer>
+<script>
+const A={gl:"Gluten",ou:"Ouă",pe:"Pește",so:"Soia",la:"Lapte",te:"Țelină",mu:"Muștar",su:"Susan"};
+// [nume, pret, alergeni, kcal, grasimi g, carbohidrati g, proteine g, sare g]
+const M=[
+["Pizza",[
+["Pizza Gurmand",32,"gl la",780,32,86,34,3.2],
+["Pizza Quattro-Formaggi",32,"gl la",830,40,84,36,3.0],
+["Pizza cu ton",32,"gl la pe",740,26,86,38,3.1],
+["Pizza Bambino",30,"gl la",600,22,72,26,2.4],
+["Pizza Kebab",32,"gl la mu",820,36,84,38,3.4],
+["Pizza Diavola",32,"gl la",800,36,84,34,3.5],
+["Pizza Vegetală",30,"gl la",650,22,86,24,2.4]]],
+["Burgeri",[
+["Burger de pui",36,"gl ou la mu su",620,28,52,36,2.2],
+["Burger de vită",38,"gl ou la mu su",690,36,50,34,2.1]]],
+["Pui",[
+["3 Crispy Strips",32,"gl ou la",480,26,32,30,1.9],
+["5 Crispy Strips",40,"gl ou la",760,40,52,48,3.0],
+["8 Crispy Strips",48,"gl ou la",1180,64,82,76,4.7],
+["Quesadilla de pui",36,"gl la",640,30,56,34,2.3],
+["Crispy la lipie",36,"gl ou la mu",700,30,66,36,2.6],
+["5 aripioare picante",36,"gl te mu",650,42,18,48,2.4],
+["Pui cu mămăligă",42,"la",620,26,58,40,2.0],
+["Platou scrijele",38,"gl ou la",720,40,50,40,2.6]]],
+["Garnituri",[
+["Cartofi cu cheddar",16,"la",360,20,38,8,1.4],
+["Cartofi cu parmezan",16,"la",350,18,38,10,1.5],
+["Cartofi pai",12,"",300,16,36,4,0.8],
+["Cartofi wedges",14,"",330,16,42,5,1.0]]],
+["Ciorbă",[
+["Ciorba zilei",26,"te la",180,7,18,10,1.8]]]
+];
+const $=s=>document.querySelector(s);let cat="Toate";
+const tabs=["Toate",...M.map(c=>c[0])];
+$("#tabs").innerHTML=tabs.map(t=>`<button data-c="${t}">${t}</button>`).join("");
+const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+function render(){
+ const q=norm($("#q").value.trim());let h="";
+ document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.c===cat));
+ for(const [c,items] of M){
+  if(cat!=="Toate"&&cat!==c)continue;
+  const f=items.filter(i=>!q||norm(i[0]).includes(q));
+  if(!f.length)continue;
+  h+=`<h2>${c}</h2>`+f.map(i=>{
+   const al=i[2]?i[2].split(" ").map(k=>`<span>${A[k]}</span>`).join(""):`<span class="no">Fără alergeni principali</span>`;
+   return `<details class="it"><summary><span class="n">${i[0]}</span><span class="p">${i[1]} lei</span></summary><div class="d"><b>Alergeni (orientativ)</b><div class="al">${al}</div><b>Valori nutriționale / porție (orientativ)</b><table><tr><td>Energie</td><td>${i[3]} kcal</td></tr><tr><td>Grăsimi</td><td>${i[4]} g</td></tr><tr><td>Carbohidrați</td><td>${i[5]} g</td></tr><tr><td>Proteine</td><td>${i[6]} g</td></tr><tr><td>Sare</td><td>${i[7]} g</td></tr></table></div></details>`}).join("");
+ }
+ $("#list").innerHTML=h||'<div class="empty">Niciun produs găsit.</div>';
+}
+$("#tabs").onclick=e=>{if(e.target.dataset.c){cat=e.target.dataset.c;render()}};
+$("#q").oninput=render;render();
+</script>
+</body>
+</html>
