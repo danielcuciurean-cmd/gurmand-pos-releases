@@ -3,15 +3,135 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Meniu Gurmand</title>
+<title>Gurmand – Meniu</title>
+<meta name="description" content="Meniul Gurmand cu ingrediente, alergeni și valori nutriționale.">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0b0b0b;color:#f5f5f5;font:18px system-ui,sans-serif;text-align:center;padding:16px}
-h1{color:#ffc928;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px}
-p{color:#a3a3a3;margin:0}
+:root{--bg:#0d0d0d;--panel:#161616;--line:#2b2b2b;--tx:#f4f1ea;--mut:#9b9788;--y:#ffc20e;--red:#e8452c}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font:400 16px/1.45 Nunito,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.hero{text-align:center;padding:36px 16px 22px;border-bottom:4px solid var(--y)}
+.hero h1{font:900 clamp(52px,15vw,96px)/1 Fraunces,Georgia,serif;letter-spacing:0;text-transform:uppercase;color:var(--y)}
+.hero p{margin-top:12px;font:700 clamp(15px,4vw,19px)/1.2 Nunito,Arial,sans-serif;letter-spacing:.5px;color:var(--tx)}
+.hero p i{font-style:normal;color:var(--y);margin:0 6px}
+.bar{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 14px}
+.wrap{max-width:1180px;margin:auto}
+.row{display:flex;gap:10px;align-items:center}
+.search{flex:1;border-radius:24px !important;background:var(--panel);border:1px solid var(--line);color:var(--tx);padding:11px 14px;font:500 16px Nunito,sans-serif;border-radius:4px;min-width:0}
+.search:focus{outline:2px solid var(--y);border-color:var(--y)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{flex:none;border:1px solid var(--line);background:var(--panel);color:var(--tx);padding:6px 13px;font:700 14.5px Nunito,sans-serif;border-radius:20px;cursor:pointer}
+.chip.on{background:var(--y);border-color:var(--y);color:#111}
+main{padding:6px 14px 30px}
+.cat{font:700 30px Fraunces,Georgia,serif;margin:26px 0 12px;display:flex;align-items:center;gap:12px}
+.cat:after{content:"";flex:1;height:2px;background:var(--line)}
+.grid{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:760px){.grid{grid-template-columns:1fr 1fr}}
+@media(min-width:1100px){.grid{grid-template-columns:1fr 1fr 1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.top{display:flex;gap:12px;align-items:center}
+.ic{flex:none;width:60px;height:60px;border-radius:14px;background:#221d0c;display:grid;place-items:center}
+.ic svg{width:44px;height:44px}
+.nm{flex:1;font:800 19px/1.15 Nunito,sans-serif}
+.nm small{display:block;margin-top:3px;font:500 13px Nunito,sans-serif;letter-spacing:0;text-transform:none;color:var(--mut)}
+.pr{flex:none;background:var(--y);color:#111;font:900 19px Nunito,sans-serif;padding:5px 12px;border-radius:14px;letter-spacing:.5px;white-space:nowrap}
+.h{font:800 13px Nunito,sans-serif;color:var(--y);margin-bottom:3px}
+.ing{font-size:15px;color:#d9d5c8}
+.inc{font-size:13.5px;color:var(--y);border:1px dashed #5a4a10;border-radius:10px;padding:8px 10px}
+.inc .sw{margin-top:8px}
+.inc ul{list-style:none;padding:0;margin:4px 0 0}
+.inc li{padding-left:16px;position:relative}
+.inc li:before{content:"–";position:absolute;left:2px}
+.post{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:2px 10px 2px 8px;border-radius:12px;border:1px solid #2e5a34;background:#122015;color:#8fd9a3;font:700 13px Nunito,sans-serif}
+.post i{width:9px;height:9px;border-radius:50%;background:#3ecf5a;display:inline-block}
+.ing b{font-weight:600;color:var(--mut);white-space:nowrap}
+.al{display:flex;flex-wrap:wrap;gap:5px}
+.al span{border:1px solid #6b2a1d;background:#2a1511;color:#ff9a82;font:700 13px Nunito,sans-serif;padding:1px 10px;border-radius:12px}
+.al span.sos{border-color:#5a4a10;background:#241d08;color:#ffd466}
+.al span.ok{border-color:#2e4a2e;background:#142014;color:#8fd08f}
+.nut{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.nut div{text-align:center;padding:6px 2px;border-right:1px solid var(--line)}
+.nut div:last-child{border:0}
+.nut strong{display:block;font:800 17px/1.2 Nunito,sans-serif}
+.nut span{font-size:11px;color:var(--mut);letter-spacing:.3px}
+.nut .kc strong{color:var(--y)}
+@media(max-width:600px){.bar{position:static !important}}
+.note2{color:var(--mut);font-size:14px;margin:-4px 0 12px}
+.empty{text-align:center;color:var(--mut);padding:40px 0}
+.note{margin-top:30px;padding:14px 16px;border-left:4px solid var(--y);background:var(--panel);font-size:14px;color:#d9d5c8}
+footer{text-align:center;color:var(--mut);font-size:13px;padding:6px 16px 36px}
 </style>
 </head>
 <body>
-<h1>Gurmand</h1>
-<p>Meniul va fi disponibil în curând.</p>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="pizza" viewBox="0 0 64 64"><path d="M6 14 Q32 0 58 14 L32 60Z" fill="#f2b233"/><path d="M6 14 Q32 0 58 14 L55 19 Q32 7 9 19Z" fill="#c8741f"/><circle cx="25" cy="24" r="4.5" fill="#d0432b"/><circle cx="38" cy="26" r="4.5" fill="#d0432b"/><circle cx="31" cy="39" r="4.5" fill="#d0432b"/><circle cx="32" cy="29" r="1.6" fill="#4d8a3b"/></symbol>
+<symbol id="burger" viewBox="0 0 64 64"><path d="M8 28 Q8 8 32 8 Q56 8 56 28Z" fill="#d98a2b"/><rect x="8" y="31" width="48" height="6" rx="3" fill="#4d8a3b"/><rect x="10" y="37" width="44" height="8" rx="4" fill="#6b3a1f"/><path d="M10 45h44l-3 4H13z" fill="#ffc20e"/><path d="M8 50 H56 Q56 58 48 58 H16 Q8 58 8 50Z" fill="#d98a2b"/><g fill="#f6e3b0"><ellipse cx="22" cy="17" rx="2.5" ry="1.4"/><ellipse cx="33" cy="14" rx="2.5" ry="1.4"/><ellipse cx="43" cy="18" rx="2.5" ry="1.4"/></g></symbol>
+<symbol id="strips" viewBox="0 0 64 64"><g fill="#e0902a" stroke="#a85f14" stroke-width="2"><rect x="6" y="30" width="44" height="12" rx="6" transform="rotate(-24 28 36)"/><rect x="12" y="38" width="44" height="12" rx="6" transform="rotate(-8 34 44)"/><rect x="16" y="14" width="42" height="12" rx="6" transform="rotate(14 37 20)"/></g></symbol>
+<symbol id="wings" viewBox="0 0 64 64"><path d="M14 46 Q8 28 26 18 Q44 8 52 22 Q58 34 44 44 Q30 54 14 46Z" fill="#c9521f"/><path d="M20 42 Q18 30 30 24" stroke="#f0a15a" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="8" y="46" width="14" height="6" rx="3" fill="#efe6d2" transform="rotate(-30 15 49)"/></symbol>
+<symbol id="fries" viewBox="0 0 64 64"><g fill="#f7c93c"><rect x="14" y="8" width="7" height="30" rx="2" transform="rotate(-8 17 23)"/><rect x="23" y="6" width="7" height="32" rx="2"/><rect x="32" y="8" width="7" height="30" rx="2" transform="rotate(6 35 23)"/><rect x="41" y="10" width="7" height="28" rx="2" transform="rotate(14 44 24)"/></g><path d="M10 32 H54 L48 58 H16Z" fill="#d0432b"/><rect x="10" y="30" width="44" height="6" rx="2" fill="#a8321f"/></symbol>
+<symbol id="wrap" viewBox="0 0 64 64"><rect x="6" y="20" width="52" height="26" rx="13" fill="#e8c98a" transform="rotate(-18 32 33)"/><path d="M14 28 Q30 14 50 20" stroke="#4d8a3b" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M12 36 Q30 24 52 30" stroke="#d98a2b" stroke-width="5" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="bowl" viewBox="0 0 64 64"><path d="M6 30 H58 Q58 54 32 54 Q6 54 6 30Z" fill="#c9521f"/><ellipse cx="32" cy="30" rx="26" ry="5" fill="#f2b233"/><circle cx="24" cy="29" r="2.5" fill="#4d8a3b"/><circle cx="38" cy="30" r="2.5" fill="#4d8a3b"/><path d="M22 20 Q26 14 22 8M32 20 Q36 14 32 8M42 20 Q46 14 42 8" stroke="#9b9788" stroke-width="2.5" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="cup" viewBox="0 0 64 64"><path d="M10 28 H54 L50 54 Q50 58 46 58 H18 Q14 58 14 54Z" fill="#2a2a2a" stroke="#555" stroke-width="2"/><path d="M12 28 Q32 6 52 28Z" fill="#c9421f"/><ellipse cx="32" cy="28" rx="22" ry="5" fill="#e8452c"/><ellipse cx="28" cy="26" rx="8" ry="1.8" fill="#ff8a6a" opacity=".7"/></symbol>
+<symbol id="platter" viewBox="0 0 64 64"><ellipse cx="32" cy="40" rx="28" ry="14" fill="#efe6d2"/><g fill="#e0902a" stroke="#a85f14" stroke-width="1.5"><rect x="12" y="24" width="26" height="9" rx="4.5" transform="rotate(-16 25 28)"/><rect x="26" y="26" width="26" height="9" rx="4.5" transform="rotate(10 39 30)"/></g><g fill="#f7c93c"><rect x="18" y="36" width="5" height="16" rx="2" transform="rotate(-60 20 44)"/><rect x="28" y="38" width="5" height="16" rx="2" transform="rotate(-80 30 46)"/><rect x="38" y="36" width="5" height="16" rx="2" transform="rotate(-100 40 44)"/></g></symbol>
+</defs></svg>
+
+<header class="hero"><h1>Gurmand</h1><p>Meniu<i>•</i>Valori nutriționale<i>•</i>Alergeni</p></header>
+<div class="bar"><div class="wrap">
+<div class="row"><input class="search" id="q" type="search" placeholder="Caută un produs" autocomplete="off" aria-label="Caută"></div>
+<div class="chips" id="cats"></div>
+</div></div>
+<main class="wrap"><div id="list"></div>
+<div class="note"><b>Important:</b> ingredientele, gramajele, alergenii și valorile nutriționale sunt <b>aproximative</b>, calculate pentru o porție. Rețetele pot varia ușor. Dacă ai alergii sau intoleranțe, spune-ne înainte să comanzi.</div></main>
+<footer>Prețuri în lei, TVA inclus.</footer>
+<script>
+const D={"cats":[{"c":"Pizza","items":[{"n":"Pizza Gurmand","p":32,"i":"pizza","ing":[["Aluat de pizza",240],["Sos de roșii",65],["Mozzarella",135],["Salam",45],["Șuncă",45],["Porumb",20],["Măsline",10]],"al":["gl","la"],"k":1315,"f":54,"c":142,"pr":69,"s":9.1,"w":560,"inc":false},{"n":"Pizza Quattro-Formaggi","p":32,"i":"pizza","ing":[["Aluat de pizza",240],["Sos de roșii",65],["Mozzarella",105],["Emmentaler",65],["Parmezan",30],["Gorgonzola",35]],"al":["gl","la"],"k":1455,"f":66,"c":136,"pr":80,"s":7.6,"w":540,"inc":false},{"n":"Pizza cu ton","p":32,"i":"pizza","ing":[["Aluat de pizza",240],["Sos de roșii",65],["Mozzarella",115],["Ton",75],["Ceapă roșie",20],["Porumb",15],["Măsline",10]],"al":["gl","la","pe"],"k":1125,"f":36,"c":141,"pr":63,"s":6.7,"w":540,"inc":false},{"n":"Pizza Bambino","p":30,"i":"pizza","ing":[["Aluat de pizza",240],["Sos de roșii",65],["Mozzarella",105],["Șuncă",50],["Cartofi prăjiți (pai)",60]],"al":["gl","la"],"k":1215,"f":40,"c":161,"pr":55,"s":7.1,"w":520,"inc":false},{"n":"Pizza Kebab","p":32,"i":"pizza","ing":[["Aluat de pizza",240],["Sos de roșii",65],["Mozzarella",125],["Carne de kebab de pui",120]],"al":["gl","la"],"k":1285,"f":49,"c":139,"pr":72,"s":7.6,"w":550,"inc":false},{"n":"Pizza Diavola","p":32,"i":"pizza","ing":[["Aluat de pizza",240],["Sos de roșii",65],["Mozzarella",125],["Salam picant",110]],"al":["gl","la"],"k":1460,"f":71,"c":138,"pr":70,"s":10.2,"w":540,"inc":false},{"n":"Pizza Vegetală","p":30,"i":"pizza","ing":[["Aluat de pizza",240],["Sos de roșii",65],["Ciuperci",50],["Amestec de cartofi cu mazăre",95],["Ardei roșu",25],["Porumb",25],["Măsline",15],["Soia",10]],"al":["gl","so"],"k":830,"f":10,"c":158,"pr":28,"s":4.6,"w":525,"inc":false}]},{"c":"Burgeri","items":[{"n":"Burger de pui crispy","p":36,"i":"burger","ing":[["Chiflă",80],["Piept de pui crispy",90],["Sosul casei",25],["Iceberg",15],["Roșii",25],["Cartofi prăjiți (pai)",200]],"al":["gl"],"k":1170,"f":57,"c":134,"pr":30,"s":3.5,"w":435,"inc":true},{"n":"Burger de vită Angus","p":38,"i":"burger","ing":[["Chiflă",80],["Carne de vită Angus",125],["Ketchup",15],["Sos barbecue",15],["Castraveți murați",20],["Bacon",15],["Cheddar",20],["Cartofi prăjiți (pai)",200]],"al":["gl","bbq","la"],"k":1350,"f":72,"c":129,"pr":45,"s":5.2,"w":490,"inc":true}]},{"c":"Crispy și pui","items":[{"n":"Meniu 3 Crispy Strips","p":32,"i":"strips","ing":[["Crispy de pui (făină, amidon)",135],["Cartofi prăjiți (pai)",200]],"al":["gl"],"k":980,"f":51,"c":99,"pr":30,"s":2.8,"w":335,"inc":true},{"n":"Meniu 5 Crispy Strips","p":40,"i":"strips","ing":[["Crispy de pui (făină, amidon)",225],["Cartofi prăjiți (pai)",200]],"al":["gl"],"k":1200,"f":64,"c":112,"pr":45,"s":3.9,"w":425,"inc":true},{"n":"Meniu 8 Crispy Strips","p":48,"i":"strips","ing":[["Crispy de pui (făină, amidon)",360],["Cartofi prăjiți (pai)",200]],"al":["gl"],"k":1540,"f":82,"c":130,"pr":68,"s":5.5,"w":560,"inc":true},{"n":"Quesadilla de pui","p":36,"i":"wrap","ing":[["Lipie",110],["Crispy de pui (făină, amidon)",90],["Mozzarella",100],["Cartofi prăjiți (pai)",200]],"al":["gl","la"],"k":1450,"f":71,"c":152,"pr":53,"s":5.1,"w":500,"inc":true},{"n":"Crispy la lipie","p":36,"i":"wrap","ing":[["Lipie",110],["Iceberg",20],["Roșii",30],["Crispy de pui (făină, amidon)",90],["Ceapă roșie",15],["Castraveți murați",20],["Cartofi prăjiți (pai)",200]],"al":["gl"],"k":1185,"f":50,"c":153,"pr":32,"s":4.0,"w":485,"inc":true},{"n":"5 aripioare picante","p":36,"i":"wings","ing":[["Aripioare de pui prăjite",250],["Cartofi prăjiți (pai)",200]],"al":[],"k":1215,"f":70,"c":92,"pr":54,"s":4.5,"w":450,"inc":true}]},{"c":"Feluri principale","items":[{"n":"Șnițel crocant cu mozzarella","p":38,"i":"platter","ing":[["Crispy de pui (făină, amidon)",120],["Mozzarella",40],["Parmezan",5],["Sos de roșii",30],["Cartofi prăjiți (pai)",200],["Sos ranch",80]],"al":["gl","la","mu"],"k":1245,"f":73,"c":104,"pr":40,"s":4.7,"w":475,"inc":false},{"n":"Pui cu mămăliguță și cartofi","p":42,"i":"platter","ing":[["Jumătate de pui copt",600],["Cartofi aurii",250],["Mujdei de usturoi",40],["Mămăligă coaptă",180]],"al":[],"k":1835,"f":90,"c":92,"pr":162,"s":7.0,"w":1070,"inc":false},{"n":"Platou cu scrijele de cartofi","p":38,"i":"platter","ing":[["Scrijele de cartofi",250],["Brânză de burduf",60],["Kaizer afumat",80],["Ceapă roșie",30],["Iaurt",180]],"al":["la"],"k":1210,"f":71,"c":102,"pr":40,"s":5.2,"w":600,"inc":false}]},{"c":"Garnituri","items":[{"n":"Cartofi pai","p":12,"i":"fries","ing":[["Cartofi prăjiți (pai)",200]],"al":[],"k":640,"f":32,"c":80,"pr":7,"s":1.2,"w":200,"inc":false},{"n":"Cartofi wedges","p":14,"i":"fries","ing":[["Cartofi wedges",200]],"al":[],"k":380,"f":16,"c":52,"pr":6,"s":1.2,"w":200,"inc":false},{"n":"Cartofi cu cheddar și jalapeno","p":16,"i":"fries","ing":[["Cartofi prăjiți (pai)",200],["Sos de cheddar",50],["Ardei jalapeno",15]],"al":["la"],"k":755,"f":40,"c":86,"pr":11,"s":2.4,"w":265,"inc":false},{"n":"Cartofi cu parmezan și usturoi","p":16,"i":"fries","ing":[["Cartofi prăjiți (pai)",200],["Parmezan",15],["Usturoi și pătrunjel",5]],"al":["la"],"k":705,"f":36,"c":81,"pr":13,"s":1.5,"w":220,"inc":false},{"n":"Cartofi dulci","p":16,"i":"fries","ing":[["Cartofi dulci prăjiți",200]],"al":[],"k":560,"f":26,"c":76,"pr":4,"s":1.0,"w":200,"inc":false},{"n":"Cartofi dippers","p":16,"i":"fries","ing":[["Dippers",200]],"al":[],"k":440,"f":22,"c":56,"pr":6,"s":1.4,"w":200,"inc":false}]}],"sauces":[{"post":true,"n":"Sosul casei","d":"Sosul clasic Gurmand, cu usturoi.","k":255,"f":26,"c":4,"pr":1,"s":1.2,"al":[]},{"post":true,"n":"Sos de roșii","d":"Sos de roșii natural, cu puțin busuioc și oregano.","k":50,"f":2,"c":7,"pr":1,"s":1.0,"al":[]},{"post":true,"n":"Ketchup","d":"Ketchup dulce Hellmann's.","k":90,"f":0,"c":20,"pr":1,"s":1.6,"al":[]},{"post":true,"n":"Sweet chilli","d":"Combinația asiatică dulce-picant.","k":160,"f":0,"c":38,"pr":0,"s":1.2,"al":[]},{"post":true,"n":"Sriracha","d":"Sos intens, cu arome de ardei și chilli. Foarte picant.","k":70,"f":1,"c":15,"pr":2,"s":2.0,"al":[]},{"post":false,"n":"Sos ranch","d":"Răcoritor, cu iaurt, verdeață și puțin usturoi.","k":160,"f":14,"c":5,"pr":2,"s":1.1,"al":["la","mu"]},{"post":true,"n":"Sos danez","d":"Sos special, acrișor, cu castraveți murați tocați.","k":145,"f":12,"c":6,"pr":1,"s":1.4,"al":[]},{"post":false,"n":"Sos cheddar","d":"Cremos, din brânză cheddar topită.","k":175,"f":13,"c":8,"pr":6,"s":1.6,"al":["la"]}]};
+const AL={gl:"Gluten",pe:"Pește",so:"Soia",la:"Lapte",te:"Țelină",mu:"Muștar",su:"Susan",bbq:"Barbecue: poate conține muștar, țelină, soia"};
+const $=s=>document.querySelector(s);
+const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const SAUCE_CAT="Sosuri",CIORBA="Ciorbă";
+let cat="Toate";
+const names=["Toate",...D.cats.map(c=>c.c),CIORBA,SAUCE_CAT];
+$("#cats").innerHTML=names.map(c=>`<button class="chip" data-c="${c}">${c}</button>`).join("");
+const chips=al=>al.length?al.map(a=>`<span>${AL[a]}</span>`).join(""):'<span class="ok">Fără alergeni principali</span>';
+const nut=i=>`<div class="nut"><div class="kc"><strong>${i.k}</strong><span>kcal</span></div><div><strong>${i.f} g</strong><span>grăsimi</span></div><div><strong>${i.c} g</strong><span>carbohidrați</span></div><div><strong>${i.pr} g</strong><span>proteine</span></div><div><strong>${i.s} g</strong><span>sare</span></div></div>`;
+const icon=n=>`<div class="ic"><svg><use href="#${n}"/></svg></div>`;
+function card(i){
+ return `<article class="card"><div class="top">${icon(i.i)}<div class="nm">${i.n}<small>Porție ~${i.w} g${i.inc?" + sos 80 g":""}</small></div><div class="pr">${i.p} lei</div></div>
+ <div><div class="h">Ingrediente</div><div class="ing">${i.ing.map(g=>`${g[0]} <b>${g[1]} g</b>`).join(" · ")}${i.inc?` · Sos la alegere <b>80 g</b>`:""}</div></div>
+ ${i.inc?`<div class="inc"><div>Sosul este la alegere (80 g): sosul casei, sos de roșii, ketchup, sweet chilli, sriracha, sos ranch, sos danez sau sos cheddar.</div><div class="sw">Vine cu cartofi pai. Schimbă cartofii contra cost:</div><ul><li>Cartofi cu cheddar și jalapeno <b>+6 lei</b></li><li>Cartofi cu parmezan și usturoi <b>+6 lei</b></li><li>Cartofi wedges <b>+4 lei</b></li><li>Cartofi dulci <b>+4 lei</b></li><li>Cartofi dippers <b>+4 lei</b></li></ul></div>`:""}
+ <div><div class="h">Alergeni</div><div class="al">${chips(i.al)}${i.inc?'<span class="sos">+ în funcție de sosul ales</span>':""}</div></div>
+ <div><div class="h">Valori nutriționale / porție${i.inc?" (fără sos)":""}</div>${nut(i)}</div></article>`;
+}
+function sauce(s){
+ return `<article class="card"><div class="top">${icon("cup")}<div class="nm">${s.n}<small>${s.d}</small>${s.post?'<span class="post"><i></i>De post</span>':""}</div></div>
+ <div><div class="h">Alergeni</div><div class="al">${chips(s.al)}</div></div>
+ <div><div class="h">Valori nutriționale / 80 g</div>${nut(s)}</div></article>`;
+}
+function ciorba(){
+ return `<article class="card"><div class="top">${icon("bowl")}<div class="nm">Ciorba zilei<small>Gătită zilnic, prin rotație</small></div><div class="pr">26 lei</div></div>
+ <div><div class="h">Ciorbe în rotație</div><div class="ing">Rădăuțeană · De burtă · De fasole de post · De afumătură</div></div>
+ <div><div class="h">Alergeni</div><div class="al"><span class="sos">Variabili în funcție de ciorba zilei</span></div></div>
+ <div class="inc">Alergenii și valorile nutriționale se schimbă de la o ciorbă la alta. Întreabă casierul ce ciorbă e azi și ce conține.</div></article>`;
+}
+function render(){
+ const q=norm($("#q").value.trim());let h="";
+ document.querySelectorAll("#cats .chip").forEach(b=>b.classList.toggle("on",b.dataset.c===cat));
+ const all=cat==="Toate";
+ for(const c of D.cats){
+  if(!all&&cat!==c.c)continue;
+  const f=c.items.filter(i=>!q||norm(i.n).includes(q)||i.ing.some(g=>norm(g[0]).includes(q)));
+  if(f.length)h+=`<div class="cat">${c.c}</div><div class="grid">${f.map(card).join("")}</div>`;
+ }
+ if((all||cat===CIORBA)&&(!q||norm("ciorba zilei radauteana burta fasole afumatura").includes(q)))h+=`<div class="cat">${CIORBA}</div><div class="grid">${ciorba()}</div>`;
+ if(all||cat===SAUCE_CAT){const f=D.sauces.filter(s=>!q||norm(s.n+" "+s.d).includes(q));if(f.length)h+=`<div class="cat">Sosuri</div><div class="note2">Alege-le la meniuri sau separat. Sosul inclus la meniu poate fi schimbat cu oricare alt sos.</div><div class="grid">${f.map(sauce).join("")}</div>`}
+ $("#list").innerHTML=h||'<div class="empty">Niciun produs găsit.</div>';
+}
+$("#cats").onclick=e=>{const c=e.target.dataset.c;if(c){cat=c;render()}};
+$("#q").oninput=render;render();
+</script>
 </body>
 </html>
